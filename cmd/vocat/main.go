@@ -618,6 +618,7 @@ func run(logger *slog.Logger, logs *loghub.Hub) error {
 	handler.StartCellularDataReconciler(pollContext)
 	handler.StartTelegramBot(pollContext)
 	handler.StartSMSNotificationDispatchers(pollContext)
+	handler.StartDeviceStatusNotifications(pollContext)
 	go handler.StartCellularCallMonitor(pollContext)
 	handler.StartAutomaticTasks(pollContext)
 

@@ -97,6 +97,7 @@ type Server struct {
 	cellularDataEventOnce     sync.Once
 	cellularDataLifecycleOnce sync.Once
 	cellularData              *cellularDataRuntime
+	cellularMedia             cellularCallMediaRegistry
 }
 
 func New(options Options) (*Server, error) {

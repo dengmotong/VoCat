@@ -11,36 +11,81 @@ import (
 	"github.com/coder/websocket"
 
 	"vocat/internal/store"
+	"vocat/internal/vowifi"
 )
 
 const maxCallMediaMessage = 16 << 10
 
 // handleCallMedia upgrades an authenticated same-origin request to a binary
 // PCM bridge. Each WebSocket message contains little-endian signed 16-bit,
-// 8 kHz, mono samples. RTP and codec details remain inside the IMS provider.
+// 8 kHz, mono samples. VoWiFi calls bridge the IMS RTP stream; cellular calls
+// bridge the modem's USB Audio Class interfaces. Codec details stay inside the
+// transport-specific implementation.
 func (s *Server) handleCallMedia(w http.ResponseWriter, r *http.Request, config store.Device) bool {
 	if !requireMethod(w, r, http.MethodGet) {
 		return true
 	}
-	if s.callTransport(config.ID) != "vowifi" {
-		writeError(w, http.StatusNotImplemented, "call_media_unavailable", "browser audio is only available for an active VoWiFi IMS call")
-		return true
-	}
 	callID := strings.TrimSpace(r.URL.Query().Get("call_id"))
-	if callID == "" || len(callID) > 256 {
-		writeError(w, http.StatusBadRequest, "invalid_call_id", "call_id is required")
+	if len(callID) > 256 {
+		writeError(w, http.StatusBadRequest, "invalid_call_id", "call_id is invalid")
 		return true
 	}
-	controller, ok := s.vowifi.(VoWiFiCallMediaController)
-	if !ok {
-		writeError(w, http.StatusNotImplemented, "call_media_unavailable", "the active IMS session does not expose RTP media")
-		return true
+	transport := s.callTransport(config.ID)
+
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	var (
+		media     vowifi.CallMedia
+		logLevels bool
+	)
+	if transport == "vowifi" {
+		if callID == "" {
+			writeError(w, http.StatusBadRequest, "invalid_call_id", "call_id is required")
+			return true
+		}
+		controller, ok := s.vowifi.(VoWiFiCallMediaController)
+		if !ok {
+			writeError(w, http.StatusNotImplemented, "call_media_unavailable", "the active IMS session does not expose RTP media")
+			return true
+		}
+		opened, err := controller.CallMedia(ctx, config.ID, callID)
+		if err != nil {
+			writeError(w, http.StatusConflict, "call_media_unavailable", err.Error())
+			return true
+		}
+		media = opened
+	} else {
+		if s.devices == nil {
+			writeError(w, http.StatusServiceUnavailable, "device_manager_unavailable", "device manager is unavailable")
+			return true
+		}
+		_, physicalID, present := s.physicalForConfig(config)
+		if !present {
+			writeError(w, http.StatusConflict, "call_media_unavailable", "device is offline")
+			return true
+		}
+		if err := s.cellularMedia.acquire(config.ID, cancel); err != nil {
+			writeError(w, http.StatusConflict, "call_media_busy", err.Error())
+			return true
+		}
+		defer s.cellularMedia.release(config.ID)
+		opened, err := s.openCellularCallMedia(ctx, config, physicalID)
+		if err != nil {
+			writeError(w, http.StatusConflict, "call_media_unavailable", err.Error())
+			return true
+		}
+		media = opened
+		logLevels = true
+		if s.logger != nil {
+			s.logger.Info("cellular call audio bridge opened",
+				"category", "call", "event", "call.media_open",
+				"device_id", config.ID, "call_id", callID,
+				"codec", opened.Codec(),
+			)
+		}
 	}
-	media, err := controller.CallMedia(r.Context(), config.ID, callID)
-	if err != nil {
-		writeError(w, http.StatusConflict, "call_media_unavailable", err.Error())
-		return true
-	}
+
 	connection, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		CompressionMode: websocket.CompressionDisabled,
 	})
@@ -48,18 +93,20 @@ func (s *Server) handleCallMedia(w http.ResponseWriter, r *http.Request, config 
 		return true
 	}
 	connection.SetReadLimit(maxCallMediaMessage)
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
 	defer connection.Close(websocket.StatusNormalClosure, "call media closed")
 
 	downlink := make(chan error, 1)
 	go func() {
 		defer cancel()
+		level := &cellularAudioLevel{}
 		for {
 			samples, readErr := media.ReadPCM(ctx)
 			if readErr != nil {
 				downlink <- readErr
 				return
+			}
+			if logLevels {
+				s.logCellularCallAudio(config.ID, callID, samples, level)
 			}
 			payload := make([]byte, len(samples)*2)
 			for index, sample := range samples {
@@ -75,7 +122,7 @@ func (s *Server) handleCallMedia(w http.ResponseWriter, r *http.Request, config 
 	for {
 		select {
 		case err := <-downlink:
-			if !errors.Is(err, context.Canceled) && !errors.Is(err, io.EOF) {
+			if !errors.Is(err, context.Canceled) && !errors.Is(err, io.EOF) && s.logger != nil {
 				s.logger.Debug("call media downlink closed", "device_id", config.ID, "call_id", callID, "error", err)
 			}
 			return true

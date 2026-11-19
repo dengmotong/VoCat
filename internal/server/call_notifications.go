@@ -127,7 +127,7 @@ func (s *Server) NotifyIncomingCall(ctx context.Context, notification IncomingCa
 	}
 
 	destCtx := s.notificationDestinationContext(ctx)
-	for _, channel := range []string{"telegram", "bark", "email", "pushplus", "webhook", "wecom", "lark"} {
+	for _, channel := range []string{"telegram", "bark", "email", "pushplus", "gotify", "webhook", "wecom", "lark"} {
 		setting, err := s.store.NotificationSetting(destCtx, channel)
 		if errors.Is(err, store.ErrNotFound) || (err == nil && !setting.Enabled) {
 			continue
@@ -163,6 +163,8 @@ func sendCallNotification(ctx context.Context, channel string, config map[string
 		return sendEmailTextNotification(ctx, config, message.Title()+" - "+message.DeviceLabel, message.Text())
 	case "pushplus":
 		return sendPushplusTextNotification(ctx, config, message.Title(), message.DetailText())
+	case "gotify":
+		return sendGotifyNotification(ctx, config, message.Title(), message.Text())
 	case "webhook":
 		return sendCallWebhookNotification(ctx, config, message)
 	case "wecom":

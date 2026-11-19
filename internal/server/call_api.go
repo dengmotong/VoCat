@@ -153,6 +153,16 @@ func (s *Server) handleCallAction(w http.ResponseWriter, r *http.Request, config
 		}})
 		return true
 	}
+	if action == "dial" && transport != "vowifi" {
+		// Route downlink/uplink voice to the module's USB audio codec before the
+		// call is placed; the browser media bridge then opens that ALSA card.
+		if err := s.prepareCellularVoice(r.Context(), physicalID); err != nil && s.logger != nil {
+			s.logger.Warn("prepare cellular voice audio before dial",
+				"category", "call", "event", "call.prepare_audio",
+				"device_id", config.ID, "raw_error", err,
+			)
+		}
+	}
 	operationContext, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	response, err := s.devices.ExecuteAT(operationContext, physicalID, command)
 	cancel()

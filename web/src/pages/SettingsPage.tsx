@@ -13,6 +13,7 @@ import { useAuth } from "../store/auth";
 import {
   buildBarkPayload,
   buildEmailPayload,
+  buildGotifyPayload,
   buildLarkPayload,
   buildNotificationsPayload,
   buildWecomPayload,
@@ -22,12 +23,13 @@ import {
   type NotifyForms,
 } from "../components/settings/model";
 import { PushplusTab, TelegramTab } from "../components/settings/BotTabs";
-import { BarkTab, EmailTab, LarkTab, WebhookTab, WecomTab } from "../components/settings/PushTabs";
+import { BarkTab, EmailTab, GotifyTab, LarkTab, WebhookTab, WecomTab } from "../components/settings/PushTabs";
 import { PluginsCard } from "../components/settings/PluginsCard";
 import { HTTPSCard } from "../components/settings/HTTPSCard";
 import { DeviceQuotaCard } from "../components/settings/DeviceQuotaCard";
 import { SMSRateLimitCard } from "../components/settings/SMSRateLimitCard";
 import { SMSAutoClearCard } from "../components/settings/SMSAutoClearCard";
+import { DeviceStatusNotificationsCard } from "../components/settings/DeviceStatusNotificationsCard";
 
 import { VoWiFiMTUCard } from "../components/settings/VoWiFiMTUCard";
 
@@ -38,6 +40,7 @@ const NOTIFY_TABS = [
   { key: "bark", label: "Bark" },
   { key: "email", label: "Email" },
   { key: "pushplus", label: "Pushplus" },
+  { key: "gotify", label: "Gotify" },
   { key: "webhook", label: "Webhook" },
   { key: "wecom", label: "企业微信消息推送" },
   { key: "lark", label: "飞书 / Lark 群机器人" },
@@ -57,6 +60,7 @@ export default function SettingsPage() {
   const [savingNotif, setSavingNotif] = useState(false);
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [testingBark, setTestingBark] = useState(false);
+  const [testingGotify, setTestingGotify] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingWecom, setTestingWecom] = useState(false);
   const [testingLark, setTestingLark] = useState(false);
@@ -344,6 +348,21 @@ export default function SettingsPage() {
     }
   }, [forms.bark]);
 
+  const onTestGotify = useCallback(async () => {
+    setTestingGotify(true);
+    try {
+      await api("/settings/notifications/gotify/test", {
+        method: "POST",
+        body: buildGotifyPayload(forms.gotify, true),
+      });
+      message.success(t("测试通知已发送"));
+    } catch (error) {
+      message.error(apiMessage(error) || t("Gotify 测试失败"));
+    } finally {
+      setTestingGotify(false);
+    }
+  }, [forms.gotify]);
+
   const onTestEmail = useCallback(async () => {
     setTestingEmail(true);
     try {
@@ -488,6 +507,7 @@ export default function SettingsPage() {
           saving={savingSMSSettings}
           onToggle={onToggleSMSAutoClear}
         />
+        <DeviceStatusNotificationsCard />
 
         {systemInfo.developer ? (
           <>
@@ -524,7 +544,7 @@ export default function SettingsPage() {
               <CardIcon>
                 <AlertRegular className="text-[24px]" />
               </CardIcon>
-              <CardTitle title={t("通知")} subtitle={t("Telegram / Bark / Email / Pushplus / Webhook / 企业微信 / 飞书 / Lark 群机器人")} />
+              <CardTitle title={t("通知")} subtitle={t("Telegram / Bark / Email / Pushplus / Gotify / Webhook / 企业微信 / 飞书 / Lark 群机器人")} />
             </div>
             <Button variant="primary" loading={savingNotif} disabled={loadingNotif} onClick={onSaveNotifications} className="!border-0" icon={<CheckmarkRegular />}>
               {t("保存通知配置")}
@@ -546,6 +566,9 @@ export default function SettingsPage() {
               ) : null}
               {activeTab === "pushplus" ? (
                 <PushplusTab value={forms.pushplus} onChange={(p) => updateChannel("pushplus", p)} />
+              ) : null}
+              {activeTab === "gotify" ? (
+                <GotifyTab value={forms.gotify} onChange={(p) => updateChannel("gotify", p)} testing={testingGotify} onTest={onTestGotify} />
               ) : null}
               {activeTab === "webhook" ? (
                 <WebhookTab

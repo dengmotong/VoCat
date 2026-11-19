@@ -57,7 +57,7 @@ func (s *Server) notifyAutomaticTask(ctx context.Context, task store.AutomaticTa
 		}, "\n"),
 		Time: run.FinishedAt, Task: task, Run: run,
 	}
-	for _, channel := range []string{"telegram", "bark", "email", "pushplus", "webhook", "wecom", "lark"} {
+	for _, channel := range []string{"telegram", "bark", "email", "pushplus", "gotify", "webhook", "wecom", "lark"} {
 		setting, err := s.store.NotificationSetting(ctx, channel)
 		if errors.Is(err, store.ErrNotFound) || (err == nil && !setting.Enabled) {
 			continue
@@ -87,6 +87,8 @@ func sendAutomaticTaskNotification(ctx context.Context, channel string, config m
 		return sendEmailTextNotification(ctx, config, message.Title, message.Text)
 	case "pushplus":
 		return sendPushplusTextNotification(ctx, config, message.Title, message.Text)
+	case "gotify":
+		return sendGotifyNotification(ctx, config, message.Title, message.Text)
 	case "webhook":
 		return sendAutomaticTaskWebhook(ctx, config, message)
 	case "wecom":

@@ -50,6 +50,10 @@ build/lists/
 .vscode/
 .idea/
 
+# ---- Local scratch (screenshots, test scripts, toolchains) ----
+/.work/
+/image/
+
 # ---- OS junk ----
 .DS_Store
 Thumbs.db

@@ -41,6 +41,7 @@ var notificationChannels = []string{
 	"webhook",
 	"bark",
 	"pushplus",
+	"gotify",
 	"wecom",
 	"lark",
 }
@@ -63,6 +64,9 @@ var notificationFields = map[string]map[string]string{
 	},
 	"pushplus": {
 		"token": "string", "topic": "string", "channel": "string",
+	},
+	"gotify": {
+		"server_url": "string", "app_token": "string", "priority": "integer",
 	},
 	"wecom": {
 		"urls": "strings", "payload_template": "string",
@@ -95,6 +99,9 @@ func (s *Server) routeSettingsAPI(
 		return true
 	case "settings/logging":
 		s.handleLoggingSettings(w, r)
+		return true
+	case "settings/device-notifications":
+		s.handleDeviceStatusNotifications(w, r)
 		return true
 	case "settings/vowifi":
 		s.handleVoWiFiSettings(w, r)
@@ -425,7 +432,7 @@ func (s *Server) handleNotificationTest(
 		writeError(w, http.StatusNotFound, "not_found", "notification channel was not found")
 		return
 	}
-	if channel != "webhook" && channel != "telegram" && channel != "email" && channel != "bark" && channel != "wecom" && channel != "lark" {
+	if channel != "webhook" && channel != "telegram" && channel != "email" && channel != "bark" && channel != "wecom" && channel != "lark" && channel != "gotify" {
 		writeError(
 			w,
 			http.StatusNotImplemented,
@@ -481,6 +488,8 @@ func (s *Server) handleNotificationTest(
 		err = sendWecomNotificationTest(notificationContext, resolved)
 	case "lark":
 		err = sendLarkNotificationTest(notificationContext, resolved)
+	case "gotify":
+		err = sendGotifyNotificationTest(notificationContext, resolved)
 	}
 	if err != nil {
 		redacted := store.RedactText(err.Error(), provider)
@@ -637,6 +646,8 @@ func validateNotificationTestConfig(channel string, config map[string]any) error
 		return validateWecomNotificationConfig(config)
 	case "lark":
 		return validateLarkNotificationConfig(config)
+	case "gotify":
+		return validateGotifyNotificationConfig(config)
 	case "telegram":
 		token := configString(config, "bot_token")
 		if token == "" || token == store.SecretMask {

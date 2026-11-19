@@ -25,7 +25,7 @@ import (
 
 const smsNotificationPollInterval = 2 * time.Second
 
-var smsOnlyNotificationChannels = []string{"bark", "email", "pushplus", "webhook", "wecom", "lark"}
+var smsOnlyNotificationChannels = []string{"bark", "email", "pushplus", "gotify", "webhook", "wecom", "lark"}
 
 type smsNotification struct {
 	DeviceID    string
@@ -161,6 +161,13 @@ func validateSMSNotificationConfig(channel string, config map[string]any) error 
 		if token := strings.TrimSpace(configString(config, "token")); token == "" || token == store.SecretMask {
 			return errors.New("pushplus.token is required")
 		}
+	case "gotify":
+		if token := strings.TrimSpace(configString(config, "app_token")); token == "" || token == store.SecretMask {
+			return errors.New("gotify.app_token is required")
+		}
+		if err := validateGotifyNotificationConfig(config); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unsupported SMS notification channel %q", channel)
 	}
@@ -210,6 +217,8 @@ func sendSMSNotification(ctx context.Context, channel string, config map[string]
 		return sendEmailSMSNotification(ctx, config, message)
 	case "pushplus":
 		return sendPushplusSMSNotification(ctx, config, message)
+	case "gotify":
+		return sendGotifySMSNotification(ctx, config, message)
 	case "webhook":
 		return sendWebhookSMSNotification(ctx, config, message)
 	case "wecom":
@@ -249,6 +258,10 @@ func sendBarkSMSNotification(ctx context.Context, config map[string]any, message
 		}
 	}
 	return nil
+}
+
+func sendGotifySMSNotification(ctx context.Context, config map[string]any, message smsNotification) error {
+	return sendGotifyNotification(ctx, config, "收到新短信", message.DetailText())
 }
 
 func sendWebhookSMSNotification(ctx context.Context, config map[string]any, message smsNotification) error {

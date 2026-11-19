@@ -6,7 +6,7 @@ import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { ChannelHeader, EmptyLine, Field, UrlListEditor } from "./controls";
 import { HEADER_NAME_SUGGESTIONS, nextHeaderRowId } from "./model";
-import type { BarkForm, EmailForm, HeaderRow, LarkForm, WebhookForm, WecomForm } from "./model";
+import type { BarkForm, EmailForm, GotifyForm, HeaderRow, LarkForm, WebhookForm, WecomForm } from "./model";
 
 const HEADER_LIST_ID = "vocat-webhook-header-names";
 
@@ -75,6 +75,58 @@ export function BarkTab({ value, onChange, testing, onTest }: PushChannelProps<B
         </Field>
         <Field label={t("图标 (Icon)")}>
           <Input value={value.icon} onChange={(e) => onChange({ icon: e.target.value })} disabled={off} placeholder={t("图标 URL，可选")} />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+export function GotifyTab({ value, onChange, testing, onTest }: PushChannelProps<GotifyForm>) {
+  const { t } = useI18n();
+  const off = !value.enabled;
+  const complete = !!(value.serverUrl.trim() && value.appToken.trim());
+  return (
+    <div className="pt-2">
+      <ChannelHeader
+        title={t("启用 Gotify 推送")}
+        enabled={value.enabled}
+        onToggle={(enabled) => onChange({ enabled })}
+        actions={
+          <Button size="small" variant="primary" plain loading={testing} disabled={off || !complete} onClick={onTest}>
+            {t("测试通知")}
+          </Button>
+        }
+      />
+      <OneWayNotificationHint />
+      <div className="space-y-4">
+        <Field
+          label={t("服务器地址")}
+          hint={t("Gotify 服务根地址，例如 https://gotify.example.com；也可直接填写以 /message 结尾的完整地址。")}
+        >
+          <Input
+            value={value.serverUrl}
+            onChange={(e) => onChange({ serverUrl: e.target.value })}
+            disabled={off}
+            placeholder="https://gotify.example.com"
+          />
+        </Field>
+        <Field label={t("应用 Token")} hint={t("在 Gotify 中创建应用后生成的 App Token，通常以 A 开头。")}>
+          <Input
+            value={value.appToken}
+            onChange={(e) => onChange({ appToken: e.target.value })}
+            disabled={off}
+            placeholder="A..."
+          />
+        </Field>
+        <Field label={t("优先级")} hint={t("Gotify 支持 0-10，数值越高提醒越强；留空按 5 处理。")}>
+          <Input
+            value={value.priority}
+            onChange={(e) => onChange({ priority: e.target.value })}
+            disabled={off}
+            type="number"
+            inputMode="numeric"
+            placeholder="5"
+          />
         </Field>
       </div>
     </div>

@@ -450,6 +450,7 @@ export interface NotificationSettings {
   bark: Record<string, unknown>;
   email: Record<string, unknown>;
   pushplus: Record<string, unknown>;
+  gotify: Record<string, unknown>;
   wecom: Record<string, unknown>;
   lark: Record<string, unknown>;
 }

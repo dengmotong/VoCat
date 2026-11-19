@@ -42,10 +42,11 @@ The backend is written in Go, the interface is built with React and TypeScript, 
 | AT and USSD | Interactive AT terminal, command history, raw modem responses, USSD start/continue/cancel flows, and clear modem error reporting. |
 | SMS | Direct cellular and IMS SMS transmission, inbound synchronization, multipart handling, delivery reports, conversation history, unread state, timestamps, and per-message delivery status. |
 | WiFi Calling | IKEv2/ePDG tunnel setup, EAP-AKA authentication, IMS registration, IMS SMS, reconnect controls, status diagnostics, and per-device routing. |
+| LTE voice calls | Dial from the Web UI over the cellular network with bidirectional audio: the browser microphone/speaker bridge the module's USB Audio Class codec, with call state and hang-up controls. |
 | eSIM and eUICC | eUICC discovery, EID and production information, certificate metadata, multi-eUICC inventory, installed profile listing, enable/disable/switch operations, download, rename, and delete operations when supported by the card. |
 | Card policy | ICCID-based WiFi Calling and flight-mode behavior with immediate policy application. |
 | Proxy routing | Upstream SOCKS routing, device bindings, country rules, TCP reachability checks, and UDP Associate checks for WiFi Calling data paths. |
-| Notifications | New inbound SMS forwarding through Telegram, Bark, email, Pushplus, and signed webhooks. Each SMS is delivered as an individual notification. |
+| Notifications | New inbound SMS forwarding through Telegram, Bark, email, Pushplus, Gotify, WeCom, Lark/Feishu, and signed webhooks. Each SMS is delivered as an individual notification. Optional device alerts push when a modem disconnects or loses cellular registration. |
 | Telegram bot | Device status, installed-profile listing and switching, WiFi Calling controls, and SMS sending. Sensitive actions require administrator confirmation. |
 | Operations | Authentication, CSRF protection, access policies, audit events, live logs, log retention, health checks, responsive layout, dark mode, and English/Chinese application UI. |
 | Distribution | Static Linux binaries, systemd installation script, self-update with SHA-256 verification, Docker image, GHCR publishing, and GitHub Actions release builds. |

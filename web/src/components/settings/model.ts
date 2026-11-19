@@ -53,6 +53,13 @@ export interface PushplusForm {
 	channel: string;
 }
 
+export interface GotifyForm {
+	enabled: boolean;
+	serverUrl: string;
+	appToken: string;
+	priority: string;
+}
+
 export interface WecomForm {
 	enabled: boolean;
 	urls: string[];
@@ -87,6 +94,7 @@ export interface NotifyForms {
   bark: BarkForm;
 	email: EmailForm;
 	pushplus: PushplusForm;
+	gotify: GotifyForm;
 	wecom: WecomForm;
 	lark: LarkForm;
 }
@@ -163,6 +171,7 @@ export function formsFromNotifications(data: Partial<NotificationSettings>): Not
   const bark = asRecord(data.bark);
 	const email = asRecord(data.email);
 	const pushplus = asRecord(data.pushplus);
+	const gotify = asRecord(data.gotify);
 	const wecom = asRecord(data.wecom);
 	const lark = asRecord(data.lark);
   return {
@@ -208,6 +217,12 @@ export function formsFromNotifications(data: Partial<NotificationSettings>): Not
 			token: str(pushplus.token),
 			topic: str(pushplus.topic),
 			channel: str(pushplus.channel) || "wechat",
+		},
+		gotify: {
+			enabled: !!gotify.enabled,
+			serverUrl: str(gotify.server_url ?? gotify.serverUrl),
+			appToken: str(gotify.app_token ?? gotify.appToken),
+			priority: gotify.priority === null || gotify.priority === undefined ? "5" : String(gotify.priority),
 		},
 		wecom: {
 			enabled: !!wecom.enabled,
@@ -297,6 +312,24 @@ export function buildLarkPayload(form: LarkForm, forTest = false) {
 	return payload;
 }
 
+export function buildGotifyPayload(form: GotifyForm, forTest = false) {
+	const serverUrl = String(form.serverUrl || "").trim();
+	const priority = Number(form.priority);
+	const payload: {
+		enabled: boolean;
+		server_url?: string;
+		app_token?: string;
+		priority: number;
+	} = {
+		enabled: !!form.enabled,
+		priority: Number.isFinite(priority) && priority >= 0 ? Math.trunc(priority) : 5,
+	};
+	if (serverUrl || !forTest) payload.server_url = serverUrl;
+	const token = String(form.appToken || "");
+	if (token || !forTest) payload.app_token = token;
+	return payload;
+}
+
 export function buildNotificationsPayload(forms: NotifyForms) {
   return {
     telegram: {
@@ -315,6 +348,7 @@ export function buildNotificationsPayload(forms: NotifyForms) {
       topic: forms.pushplus.topic || "",
       channel: forms.pushplus.channel || "",
     },
+    gotify: buildGotifyPayload(forms.gotify),
     webhook: buildWebhookPayload(forms.webhook),
 		bark: buildBarkPayload(forms.bark),
 		wecom: buildWecomPayload(forms.wecom),

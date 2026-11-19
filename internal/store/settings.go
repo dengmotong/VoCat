@@ -22,6 +22,8 @@ func DefaultNotificationSensitiveFields(channel string) []string {
 		return []string{"secret"}
 	case "pushplus":
 		return []string{"token"}
+	case "gotify":
+		return []string{"app_token"}
 	case "wecom":
 		return []string{"urls"}
 	case "lark":

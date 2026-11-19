@@ -42,10 +42,11 @@ Vocat 是一款面向 Quectel EC20/EC25 系列蜂窝模组的开源 Web 控制�
 | AT 与 USSD | 交互式 AT 终端、命令历史、原始模组响应、USSD 发起/继续/取消流程以及清晰的模组错误上报。 |
 | 短信 | 蜂窝与 IMS 短信直接发送、入站同步、分段短信处理、送达报告、会话历史、未读状态、时间戳以及逐条消息的送达状态。 |
 | WiFi Calling | IKEv2/ePDG 隧道建立、EAP-AKA 鉴权、IMS 注册、IMS 短信、重连控制、状态诊断以及按设备路由。 |
+| LTE 语音通话 | 在网页中通过蜂窝网络拨号并双向通话：浏览器麦克风/扬声器与模组 USB 音频接口桥接，支持通话状态与挂断。 |
 | eSIM 与 eUICC | eUICC 发现、EID 与生产信息、证书元数据、多 eUICC 清单、已安装配置文件列表、启用/禁用/切换操作，以及在卡片支持时进行下载、重命名和删除。 |
 | 卡策略 | 基于 ICCID 的 WiFi Calling 与飞行模式行为，策略即时应用。 |
 | 代理路由 | 上游 SOCKS 路由、设备绑定、国家规则、TCP 可达性检查以及面向 WiFi Calling 数据路径的 UDP Associate 检查。 |
-| 通知 | 通过 Telegram、Bark、邮件、Pushplus 以及签名 Webhook 转发新入站短信，每条短信单独推送。 |
+| 通知 | 通过 Telegram、Bark、邮件、Pushplus、Gotify、企业微信、飞书以及签名 Webhook 转发新入站短信，每条短信单独推送；可选在设备掉线或掉网时推送提醒。 |
 | Telegram 机器人 | 设备状态、已安装配置文件列表与切换、WiFi Calling 控制以及短信发送。敏感操作需要管理员确认。 |
 | 运维 | 鉴权、CSRF 防护、访问策略、审计事件、实时日志、日志留存、健康检查、响应式布局、深色模式以及中英文应用界面。 |
 | 分发 | 静态 Linux 二进制、systemd 安装脚本、带 SHA-256 校验的自更新、Docker 镜像、GHCR 发布以及 GitHub Actions 发布构建。 |
