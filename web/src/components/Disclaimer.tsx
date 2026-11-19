@@ -42,8 +42,9 @@ function ZhItems() {
         <strong className="text-indigo-600 dark:text-indigo-400">不得使用属于他人的生产用订户凭证</strong>。
       </Item>
       <Item index={3}>
-        对 MCC 460 / 461（中国大陆）SIM 卡，系统将<strong className="text-red-500 dark:text-red-400">自动强制飞行模式并写入卡策略</strong>
-        ；向 +86 号段发送短信会被服务端拦截。上述为代码层强制控制，严禁移除、绕过、禁用、伪装或破坏。
+        本构建<strong className="text-emerald-600 dark:text-emerald-400">不按 SIM 卡归属地限制服务</strong>
+        ：MCC 460 / 461（中国大陆）及任何其他地区的卡片均可正常使用数据、短信与 VoWiFi，向任何号段（含 +86）发送短信均不会被服务端拦截。
+        新插入的卡片仍会先套用默认 RF 保护策略（飞行模式 + VoWiFi 待命），需在界面中手动开启蜂窝数据。
       </Item>
       <Item index={4}>
         <strong className="text-red-500 dark:text-red-400">禁止用途：</strong>
@@ -91,12 +92,13 @@ function EnItems() {
         .
       </Item>
       <Item index={3}>
-        For MCC 460 / 461 (Chinese mainland) SIM cards, the system will{" "}
-        <strong className="text-red-500 dark:text-red-400">
-          automatically force airplane mode and write a card policy
+        This build{" "}
+        <strong className="text-emerald-600 dark:text-emerald-400">
+          does not restrict service by SIM home region
         </strong>
-        ; SMS to +86 numbers is blocked by the server. These are code-enforced controls and must not be removed,
-        bypassed, disabled, disguised, or tampered with.
+        : cards from MCC 460 / 461 (Chinese mainland) and from every other region may use data, SMS, and VoWiFi, and SMS
+        to any destination (including +86) is accepted by the server. A newly inserted card still starts under the
+        default RF-safe policy (airplane mode on, VoWiFi standing by) until cellular data is enabled in the UI.
       </Item>
       <Item index={4}>
         <strong className="text-red-500 dark:text-red-400">Prohibited uses:</strong>{" "}

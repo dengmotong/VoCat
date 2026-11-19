@@ -9,14 +9,14 @@ import (
 )
 
 // BlockedMCCs lists the mobile country codes whose SIM cards must not be
-// served by this product. The product does not provide service to mainland
-// China cards; the set mirrors the CN entry of the MCC table used for upstream
-// proxy routing (460/461). It is keyed by MCC with a display name for logs and
+// served by this product. It is keyed by MCC with a display name for logs and
 // user-facing messaging.
-var BlockedMCCs = map[string]string{
-	"460": "中国",
-	"461": "中国",
-}
+//
+// The map is intentionally empty: this build serves every region, so no MCC
+// (including 460/461) triggers a regional block. RegionBlockReason therefore
+// always returns "" and every guard built on it is a no-op, which keeps the
+// call sites (API handlers, SMS/data paths, periodic enforcement) unchanged.
+var BlockedMCCs = map[string]string{}
 
 // CardMCCMNC splits an IMSI into its mobile country code and mobile network
 // code. The MCC is the leading three digits and the MNC the following two or
@@ -61,10 +61,9 @@ func IsPlaceholderIMSI(imsi string) bool {
 }
 
 // RegionBlockReason returns a human-readable reason when the SIM identified by
-// the IMSI belongs to a blocked region. It returns an empty string when the
-// card is allowed or when the IMSI is unavailable: only a confirmed blocked
-// MCC triggers a block (fail-open), so a transient IMSI read failure never
-// denies service to a legitimate card.
+// the IMSI belongs to a blocked region. Because BlockedMCCs is empty in this
+// build, it always returns "" : every card is served regardless of its home
+// MCC, and no SIM can be denied data, SMS, or VoWiFi by geography.
 func RegionBlockReason(imsi string) string {
 	mcc, _ := CardMCCMNC(imsi)
 	country, blocked := BlockedMCCs[mcc]
@@ -77,9 +76,8 @@ func RegionBlockReason(imsi string) string {
 // regionBlockError reports whether the currently inserted SIM must not be
 // served. It reads only the cached snapshot IMSI and never issues an extra AT
 // command, so it adds no modem round-trip and leaves guarded command
-// transcripts untouched. A missing snapshot or IMSI yields nil (fail-open);
-// the periodic region enforcement forces airplane mode as the authoritative
-// backstop.
+// transcripts untouched. With no blocked MCCs configured it always returns
+// nil, so no card is ever denied service.
 func (manager *Manager) regionBlockError(state *managedDevice) error {
 	manager.mu.RLock()
 	var snapshot *Snapshot

@@ -154,15 +154,18 @@ func blockedRegionServer(t *testing.T, imsi string) *Server {
 
 func TestModemSummaryRegionFields(t *testing.T) {
 	t.Parallel()
-	blocked := modemSummary(&device.Snapshot{IMSI: "460001234567890"}, "", "")
-	if blocked["service_blocked"] != true {
-		t.Fatalf("service_blocked = %v, want true", blocked["service_blocked"])
+	// No MCC is blocked in this build, so a mainland-China card is served like
+	// any other: the summary still names the card's home country but never
+	// reports a service block.
+	china := modemSummary(&device.Snapshot{IMSI: "460001234567890"}, "", "")
+	if china["service_blocked"] != false {
+		t.Fatalf("service_blocked = %v, want false", china["service_blocked"])
 	}
-	if blocked["card_mcc"] != "460" || blocked["card_country"] != "中国" {
-		t.Fatalf("card_mcc=%v card_country=%v", blocked["card_mcc"], blocked["card_country"])
+	if china["card_mcc"] != "460" || china["card_country"] != "中国" {
+		t.Fatalf("card_mcc=%v card_country=%v", china["card_mcc"], china["card_country"])
 	}
-	if reason, _ := blocked["blocked_reason"].(string); reason == "" {
-		t.Fatal("blocked_reason must be set for a blocked card")
+	if reason, _ := china["blocked_reason"].(string); reason != "" {
+		t.Fatalf("blocked_reason = %q, want empty", reason)
 	}
 
 	allowed := modemSummary(&device.Snapshot{IMSI: "310260123456789"}, "", "")
@@ -214,8 +217,12 @@ func TestCountryNameForMCC(t *testing.T) {
 	}
 }
 
-func TestHandleVoWiFiEnabledBlockedRegion(t *testing.T) {
+func TestHandleVoWiFiEnabledNotBlockedForChinaRegion(t *testing.T) {
 	server := blockedRegionServer(t, "460001234567890")
+	// Seed the device so the post-guard UpsertDevice succeeds.
+	if err := server.store.UpsertDevice(context.Background(), store.Device{ID: "dev1", Name: "EC20"}); err != nil {
+		t.Fatalf("seed device: %v", err)
+	}
 	request := httptest.NewRequest(http.MethodPatch, "/devices/dev1/vowifi", strings.NewReader(`{"enabled":true}`))
 	request.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
@@ -224,19 +231,9 @@ func TestHandleVoWiFiEnabledBlockedRegion(t *testing.T) {
 	if handled := server.handleVoWiFiEnabled(recorder, request, config, true); !handled {
 		t.Fatal("handler did not claim the request")
 	}
-	if recorder.Code != http.StatusForbidden {
-		t.Fatalf("status = %d, want 403", recorder.Code)
-	}
-	var envelope errorEnvelope
-	if err := json.NewDecoder(recorder.Body).Decode(&envelope); err != nil {
-		t.Fatal(err)
-	}
-	if envelope.Error.Code != "region_blocked" {
-		t.Fatalf("error code = %q, want region_blocked", envelope.Error.Code)
-	}
-	// The block must happen before any state change is persisted.
-	if _, err := server.store.Device(context.Background(), "dev1"); !errors.Is(err, store.ErrNotFound) {
-		t.Fatalf("device config must not be written for a blocked region, err=%v", err)
+	// No MCC is blocked, so an MCC 460 card must never see region_blocked.
+	if recorder.Code == http.StatusForbidden {
+		t.Fatalf("MCC 460 SIM must not be blocked, got 403: %s", recorder.Body.String())
 	}
 }
 

@@ -1683,12 +1683,10 @@ func reconcileCardPolicies(
 const cardPolicySourceRegionBlock = "auto_region_block"
 
 // enforceCardRegion applies the regional service policy for one refreshed
-// device. A SIM whose IMSI home MCC is blocked (mainland China, 460/461) is
-// denied service: the radio is forced into airplane mode and a blocking card
-// policy is persisted. The check is fail-open — it only acts on a positively
-// read blocked IMSI — and the lift path only runs once the current card is
-// positively confirmed to be allowed, so an unreadable IMSI never causes a
-// block or a spurious restore.
+// device. No MCC is blocked in this build, so this never forces airplane mode
+// or persists a blocking card policy; it only runs the lift path, which clears
+// any stale auto_region_block marker left by an older build once the current
+// card is positively confirmed.
 func enforceCardRegion(
 	ctx context.Context,
 	logger *slog.Logger,
